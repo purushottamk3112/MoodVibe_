@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation } from "@tanstack/react-query";
-import { Music, Heart, Search, Sun, Moon } from "lucide-react";
+import { Music, Heart, Search, Sun, Moon, LogOut, User } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
+import { useAuth } from "@/hooks/useAuth";
 import { SongCard } from "@/components/song-card";
 import { LoadingState } from "@/components/loading-state";
 import { apiRequest } from "@/lib/queryClient";
@@ -13,7 +14,12 @@ export default function Home() {
   const [moodInput, setMoodInput] = useState("");
   const [recommendations, setRecommendations] = useState<RecommendationsResponse | null>(null);
   const { theme, toggleTheme } = useTheme();
+  const { user } = useAuth();
   const { toast } = useToast();
+
+  const handleLogout = () => {
+    window.location.href = "/api/logout";
+  };
 
   const recommendationsMutation = useMutation({
     mutationFn: async (mood: string): Promise<RecommendationsResponse> => {
@@ -62,23 +68,59 @@ export default function Home() {
           </h1>
         </div>
 
-        <motion.button
-          onClick={toggleTheme}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          className="relative w-12 h-6 bg-secondary rounded-full shadow-inner transition-colors duration-300"
-          data-testid="theme-toggle"
-        >
-          <motion.div
-            className="absolute w-5 h-5 bg-primary rounded-full top-0.5 shadow-md"
-            animate={{
-              x: theme === "dark" ? 24 : 2,
-            }}
-            transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
-          />
-          <Sun className="absolute left-1.5 top-1 w-3 h-3 text-muted-foreground" />
-          <Moon className="absolute right-1.5 top-1 w-3 h-3 text-muted-foreground" />
-        </motion.button>
+        <div className="flex items-center space-x-4">
+          {/* User Info */}
+          {user && (
+            <div className="flex items-center space-x-3">
+              {user.profileImageUrl ? (
+                <img
+                  src={user.profileImageUrl}
+                  alt="Profile"
+                  className="w-8 h-8 rounded-full object-cover border-2 border-primary/20"
+                  data-testid="user-avatar"
+                />
+              ) : (
+                <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
+                  <User className="w-4 h-4 text-primary" />
+                </div>
+              )}
+              <span className="text-sm text-muted-foreground hidden sm:inline">
+                {user.firstName || user.email}
+              </span>
+            </div>
+          )}
+
+          {/* Theme Toggle */}
+          <motion.button
+            onClick={toggleTheme}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            className="relative w-12 h-6 bg-secondary rounded-full shadow-inner transition-colors duration-300"
+            data-testid="theme-toggle"
+          >
+            <motion.div
+              className="absolute w-5 h-5 bg-primary rounded-full top-0.5 shadow-md"
+              animate={{
+                x: theme === "dark" ? 24 : 2,
+              }}
+              transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+            />
+            <Sun className="absolute left-1.5 top-1 w-3 h-3 text-muted-foreground" />
+            <Moon className="absolute right-1.5 top-1 w-3 h-3 text-muted-foreground" />
+          </motion.button>
+
+          {/* Logout Button */}
+          <motion.button
+            onClick={handleLogout}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="px-4 py-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-xl transition-all duration-300 flex items-center space-x-2"
+            data-testid="logout-button"
+          >
+            <LogOut className="w-4 h-4" />
+            <span className="hidden sm:inline">Sign Out</span>
+          </motion.button>
+        </div>
       </motion.header>
 
       {/* Main Content */}

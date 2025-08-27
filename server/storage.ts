@@ -1,14 +1,39 @@
-// This file is kept for potential future storage needs
-// Currently MoodVibe operates as a stateless application
+import {
+  users,
+  type User,
+  type UpsertUser,
+} from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
+// Interface for storage operations
 export interface IStorage {
-  // Future storage methods can be added here
+  // User operations for Replit Auth
+  getUser(id: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
 }
 
-export class MemStorage implements IStorage {
-  constructor() {
-    // No storage needed for stateless mood-based recommendations
+export class DatabaseStorage implements IStorage {
+  // User operations for Replit Auth
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(userData)
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          ...userData,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return user;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
