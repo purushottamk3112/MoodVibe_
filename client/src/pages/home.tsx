@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation } from "@tanstack/react-query";
-import { Music, Heart, Search, Sun, Moon, Sparkles, Zap, History } from "lucide-react";
+import { Music, Heart, Search, Sun, Moon, Sparkles, Zap, History, User, LogOut, LogIn } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
+import { useAuth } from "@/contexts/auth-context";
 import { useSearchHistory } from "@/hooks/use-search-history";
 import { SongCard } from "@/components/song-card";
 import { LoadingState } from "@/components/loading-state";
 import { SearchSuggestionDropdown } from "@/components/search-suggestion-dropdown";
+import { AuthModal } from "@/components/auth-modal";
 import { apiRequest } from "@/lib/queryClient";
 import { RecommendationsResponse } from "@/types/music";
 import { useToast } from "@/hooks/use-toast";
@@ -16,10 +18,14 @@ export default function Home() {
   const [recommendations, setRecommendations] = useState<RecommendationsResponse | null>(null);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const searchInputRef = useRef<HTMLTextAreaElement>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   
   const { theme, toggleTheme } = useTheme();
+  const { user, logout, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const {
     searchHistory,
@@ -28,12 +34,15 @@ export default function Home() {
     clearHistory,
   } = useSearchHistory();
 
-  // Handle click outside to close suggestions
+  // Handle click outside to close suggestions and user menu
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
         setShowSuggestions(false);
         setIsSearchFocused(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false);
       }
     };
 
@@ -43,7 +52,22 @@ export default function Home() {
 
   const recommendationsMutation = useMutation({
     mutationFn: async (mood: string): Promise<RecommendationsResponse> => {
-      const response = await apiRequest("POST", "/api/recommendations", { mood });
+      const token = localStorage.getItem("auth_token");
+      const headers: HeadersInit = { "Content-Type": "application/json" };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      
+      const response = await fetch("/api/recommendations", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ mood }),
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to get recommendations");
+      }
+      
       return response.json();
     },
     onSuccess: (data) => {
@@ -131,6 +155,83 @@ export default function Home() {
               <Sun className="w-5 h-5 text-foreground" />
             )}
           </motion.button>
+
+          {/* User Authentication */}
+          {authLoading ? (
+            <div className="w-10 h-10 bg-muted rounded-full animate-pulse" />
+          ) : user ? (
+            <div className="relative" ref={userMenuRef}>
+              <motion.button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="flex items-center space-x-3 p-2 glass-card rounded-full hover:bg-accent/10 transition-all duration-300"
+              >
+                {user.avatar ? (
+                  <img
+                    src={user.avatar}
+                    alt={user.name}
+                    className="w-8 h-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-8 h-8 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">
+                      {user.name.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                )}
+                <span className="hidden sm:block text-foreground font-medium">
+                  {user.name}
+                </span>
+              </motion.button>
+
+              {/* User Menu Dropdown */}
+              <AnimatePresence>
+                {showUserMenu && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    className="absolute right-0 top-full mt-2 glass-card rounded-xl border border-border/50 shadow-2xl z-50 min-w-48"
+                  >
+                    <div className="p-4 border-b border-border/30">
+                      <p className="font-medium text-foreground">{user.name}</p>
+                      <p className="text-sm text-muted-foreground">{user.email}</p>
+                      <div className="mt-2">
+                        <span className="inline-flex items-center px-2 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium">
+                          {user.provider === "google" ? "Google" : "Email"}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        logout();
+                        setShowUserMenu(false);
+                        toast({
+                          title: "Goodbye! 👋",
+                          description: "You've been logged out successfully.",
+                        });
+                      }}
+                      className="w-full px-4 py-3 text-left hover:bg-accent/20 transition-colors flex items-center space-x-2 text-muted-foreground hover:text-foreground"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Sign Out</span>
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ) : (
+            <motion.button
+              onClick={() => setShowAuthModal(true)}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-primary to-accent text-primary-foreground font-medium rounded-full hover:shadow-lg transition-all duration-300"
+            >
+              <LogIn className="w-4 h-4" />
+              <span>Sign In</span>
+            </motion.button>
+          )}
         </div>
       </motion.header>
 
@@ -397,6 +498,12 @@ export default function Home() {
           )}
         </AnimatePresence>
       </main>
+
+      {/* Authentication Modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+      />
     </div>
   );
 }
