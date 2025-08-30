@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation } from "@tanstack/react-query";
-import { Music, Heart, Search, Sun, Moon } from "lucide-react";
+import { Music, Heart, Search, Sun, Moon, Sparkles, Zap, History } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
+import { useSearchHistory } from "@/hooks/use-search-history";
 import { SongCard } from "@/components/song-card";
 import { LoadingState } from "@/components/loading-state";
+import { SearchSuggestionDropdown } from "@/components/search-suggestion-dropdown";
 import { apiRequest } from "@/lib/queryClient";
 import { RecommendationsResponse } from "@/types/music";
 import { useToast } from "@/hooks/use-toast";
@@ -12,8 +14,32 @@ import { useToast } from "@/hooks/use-toast";
 export default function Home() {
   const [moodInput, setMoodInput] = useState("");
   const [recommendations, setRecommendations] = useState<RecommendationsResponse | null>(null);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchInputRef = useRef<HTMLTextAreaElement>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+  
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
+  const {
+    searchHistory,
+    addToHistory,
+    removeFromHistory,
+    clearHistory,
+  } = useSearchHistory();
+
+  // Handle click outside to close suggestions
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+        setIsSearchFocused(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const recommendationsMutation = useMutation({
     mutationFn: async (mood: string): Promise<RecommendationsResponse> => {
@@ -22,9 +48,11 @@ export default function Home() {
     },
     onSuccess: (data) => {
       setRecommendations(data);
+      // Add to search history
+      addToHistory(moodInput.trim(), data.detectedMood);
       toast({
-        title: "Recommendations found!",
-        description: `Found ${data.songs.length} songs for your ${data.detectedMood} mood.`,
+        title: "🎵 Recommendations found!",
+        description: `Found ${data.songs.length} perfect songs for your ${data.detectedMood} mood.`,
       });
     },
     onError: (error) => {
@@ -40,8 +68,34 @@ export default function Home() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (moodInput.trim()) {
+      setShowSuggestions(false);
+      setIsSearchFocused(false);
       recommendationsMutation.mutate(moodInput.trim());
     }
+  };
+
+  const handleSearchSelect = (query: string) => {
+    setMoodInput(query);
+    setShowSuggestions(false);
+    setIsSearchFocused(false);
+    // Auto-submit the selected query
+    setTimeout(() => {
+      recommendationsMutation.mutate(query.trim());
+    }, 100);
+  };
+
+  const handleSearchFocus = () => {
+    setIsSearchFocused(true);
+    setShowSuggestions(true);
+  };
+
+  const handleSearchBlur = () => {
+    // Small delay to allow clicking on suggestions
+    setTimeout(() => {
+      if (!searchContainerRef.current?.contains(document.activeElement)) {
+        setIsSearchFocused(false);
+      }
+    }, 150);
   };
 
   return (
@@ -87,82 +141,195 @@ export default function Home() {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="text-center mb-12 max-w-3xl mx-auto"
+          className="text-center mb-16 max-w-4xl mx-auto"
         >
           <motion.div
             animate={{
               rotate: [0, 5, -5, 0],
+              scale: [1, 1.05, 1],
             }}
             transition={{
               duration: 4,
               repeat: Infinity,
               ease: "easeInOut",
             }}
-            className="inline-block mb-6"
+            className="inline-block mb-8"
           >
-            <div className="w-20 h-20 mx-auto bg-gradient-to-r from-primary to-accent rounded-2xl flex items-center justify-center shadow-2xl">
-              <Heart className="w-10 h-10 text-white" />
+            <div className="relative w-24 h-24 mx-auto bg-gradient-to-r from-primary via-accent to-primary rounded-3xl flex items-center justify-center shadow-2xl">
+              <Heart className="w-12 h-12 text-white relative z-10" />
+              <motion.div
+                animate={{ opacity: [0.5, 1, 0.5] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="absolute inset-0 bg-gradient-to-r from-primary/20 to-accent/20 rounded-3xl blur-xl"
+              />
             </div>
           </motion.div>
           
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6 leading-tight">
+          <motion.h2 
+            className="text-5xl md:text-6xl font-bold text-foreground mb-8 leading-tight"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+          >
             Discover Music That{" "}
-            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              Matches Your Mood
-            </span>
-          </h2>
-          <p className="text-xl text-muted-foreground leading-relaxed">
-            Tell us how you're feeling, and we'll find the perfect soundtrack for your moment using AI-powered music recommendations.
-          </p>
+            <motion.span 
+              className="bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent bg-300% animate-pulse"
+              animate={{ backgroundPosition: ['0%', '100%', '0%'] }}
+              transition={{ duration: 3, repeat: Infinity }}
+            >
+              Matches Your Soul
+            </motion.span>
+          </motion.h2>
+          
+          <motion.p 
+            className="text-xl md:text-2xl text-muted-foreground leading-relaxed mb-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+          >
+            Tell us how you're feeling, and we'll craft the perfect soundtrack for your moment using ✨ AI-powered music discovery.
+          </motion.p>
+          
+          <motion.div
+            className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8 }}
+          >
+            <div className="flex items-center space-x-2 bg-accent/10 px-4 py-2 rounded-full">
+              <Sparkles className="w-4 h-4" />
+              <span>AI-Powered</span>
+            </div>
+            <div className="flex items-center space-x-2 bg-accent/10 px-4 py-2 rounded-full">
+              <Zap className="w-4 h-4" />
+              <span>Instant Results</span>
+            </div>
+            <div className="flex items-center space-x-2 bg-accent/10 px-4 py-2 rounded-full">
+              <History className="w-4 h-4" />
+              <span>Search History</span>
+            </div>
+          </motion.div>
         </motion.div>
 
-        {/* Mood Input Form */}
+        {/* Enhanced Mood Input Form */}
         <motion.form
           onSubmit={handleSubmit}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
-          className="w-full max-w-2xl mx-auto mb-12"
+          className="w-full max-w-3xl mx-auto mb-16"
           data-testid="mood-form"
         >
-          <div className="glass-card rounded-2xl p-8 shadow-2xl">
-            <div className="space-y-6">
-              <div>
-                <label htmlFor="mood" className="block text-sm font-medium text-foreground mb-2">
-                  How are you feeling today?
+          <div className="glass-card rounded-3xl p-8 md:p-10 shadow-2xl border border-border/50">
+            <div className="space-y-8">
+              <div className="text-center">
+                <motion.h3 
+                  className="text-2xl font-bold text-foreground mb-3"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  🎭 What's Your Vibe Today?
+                </motion.h3>
+                <p className="text-muted-foreground">
+                  Describe your mood, emotions, or the atmosphere you're looking for
+                </p>
+              </div>
+              
+              <div className="relative" ref={searchContainerRef}>
+                <label htmlFor="mood" className="block text-sm font-semibold text-foreground mb-3">
+                  Your Mood Description
                 </label>
-                <textarea
-                  id="mood"
-                  value={moodInput}
-                  onChange={(e) => setMoodInput(e.target.value)}
-                  placeholder="I'm feeling nostalgic about summer nights... or maybe energetic and ready to conquer the world!"
-                  rows={4}
-                  className="w-full px-4 py-3 rounded-xl border border-border bg-background/50 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 resize-none"
-                  maxLength={500}
-                  data-testid="mood-input"
-                />
-                <div className="text-right mt-2">
-                  <span className="text-sm text-muted-foreground">
-                    {moodInput.length}/500
-                  </span>
+                <div className="relative">
+                  <motion.div
+                    className={`relative rounded-xl transition-all duration-300 ${
+                      isSearchFocused 
+                        ? 'ring-2 ring-primary/50 shadow-lg shadow-primary/10' 
+                        : 'hover:shadow-md'
+                    }`}
+                    whileFocus={{ scale: 1.01 }}
+                  >
+                    <textarea
+                      ref={searchInputRef}
+                      id="mood"
+                      value={moodInput}
+                      onChange={(e) => setMoodInput(e.target.value)}
+                      onFocus={handleSearchFocus}
+                      onBlur={handleSearchBlur}
+                      placeholder="I'm feeling nostalgic about summer nights... or maybe energetic and ready to conquer the world! 🌟"
+                      rows={4}
+                      className={`w-full px-6 py-4 rounded-xl border-2 transition-all duration-300 resize-none text-lg leading-relaxed ${
+                        theme === 'dark'
+                          ? 'border-border bg-card/80 text-foreground placeholder:text-muted-foreground focus:bg-card'
+                          : 'border-border bg-background/80 text-foreground placeholder:text-muted-foreground focus:bg-background'
+                      } focus:outline-none focus:border-primary/50 backdrop-blur-sm`}
+                      maxLength={500}
+                      data-testid="mood-input"
+                    />
+                    <div className="absolute bottom-3 right-3 flex items-center space-x-3">
+                      <span className={`text-sm transition-colors ${
+                        moodInput.length > 450 ? 'text-warning' : 'text-muted-foreground'
+                      }`}>
+                        {moodInput.length}/500
+                      </span>
+                      {moodInput.length > 0 && (
+                        <motion.div
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          className="w-2 h-2 bg-primary rounded-full"
+                        />
+                      )}
+                    </div>
+                  </motion.div>
+                  
+                  <SearchSuggestionDropdown
+                    isOpen={showSuggestions && (searchHistory.length > 0 || moodInput.length > 0)}
+                    searchHistory={searchHistory}
+                    onSelect={handleSearchSelect}
+                    onRemove={removeFromHistory}
+                    onClear={clearHistory}
+                    searchQuery={moodInput}
+                  />
                 </div>
               </div>
 
-              <motion.button
-                type="submit"
-                disabled={!moodInput.trim() || recommendationsMutation.isPending}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full px-8 py-4 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl transition-all duration-300 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-                data-testid="submit-button"
-              >
-                <Search className="w-5 h-5" />
-                <span>
-                  {recommendationsMutation.isPending
-                    ? "Finding Your Music..."
-                    : "Get My Soundtrack"}
-                </span>
-              </motion.button>
+              <motion.div className="flex flex-col sm:flex-row gap-4">
+                <motion.button
+                  type="submit"
+                  disabled={!moodInput.trim() || recommendationsMutation.isPending}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className={`flex-1 px-8 py-5 rounded-xl font-bold text-lg transition-all duration-300 flex items-center justify-center space-x-3 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed ${
+                    !moodInput.trim() || recommendationsMutation.isPending
+                      ? 'bg-muted text-muted-foreground'
+                      : 'bg-gradient-to-r from-primary to-accent text-primary-foreground hover:shadow-xl hover:shadow-primary/25'
+                  }`}
+                  data-testid="submit-button"
+                >
+                  <Search className={`w-6 h-6 ${
+                    recommendationsMutation.isPending ? 'animate-pulse' : ''
+                  }`} />
+                  <span>
+                    {recommendationsMutation.isPending
+                      ? "🎵 Finding Your Perfect Soundtrack..."
+                      : "✨ Discover My Music"}
+                  </span>
+                </motion.button>
+                
+                {searchHistory.length > 0 && (
+                  <motion.button
+                    type="button"
+                    onClick={() => setShowSuggestions(!showSuggestions)}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="px-6 py-5 rounded-xl border-2 border-border hover:border-primary/50 text-muted-foreground hover:text-foreground transition-all duration-300 flex items-center justify-center space-x-2 glass-card"
+                    title="View search history"
+                  >
+                    <History className="w-5 h-5" />
+                    <span className="hidden sm:inline">History</span>
+                  </motion.button>
+                )}
+              </motion.div>
             </div>
           </div>
         </motion.form>

@@ -150,6 +150,76 @@
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
   }
 
+  /* Enhanced Search Input Styles */
+  .search-input-enhanced {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(12px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .dark .search-input-enhanced {
+    background: rgba(15, 15, 25, 0.4);
+  }
+
+  .search-input-enhanced:focus {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+  }
+
+  .dark .search-input-enhanced:focus {
+    background: rgba(15, 15, 25, 0.6);
+  }
+
+  /* Gradient Animation */
+  .bg-300% {
+    background-size: 300% 300%;
+  }
+
+  /* Enhanced Glass Effect */
+  .glass-card-enhanced {
+    backdrop-filter: blur(20px) saturate(180%);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+  }
+
+  .dark .glass-card-enhanced {
+    background: rgba(15, 15, 25, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  }
+
+  /* Pulse Animation for Active Elements */
+  .pulse-glow {
+    animation: pulseGlow 2s ease-in-out infinite;
+  }
+
+  /* Floating Animation */
+  .float-animation {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  /* Shimmer Effect */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.1),
+      transparent
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s ease-in-out infinite;
+  }
+
+  .dark .shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.05),
+      transparent
+    );
+  }
+
   .line-clamp-1 {
     display: -webkit-box;
     -webkit-line-clamp: 1;
@@ -173,5 +243,51 @@
     50% { 
       background-position: 100% 50%; 
     }
+  }
+
+  @keyframes pulseGlow {
+    0%, 100% {
+      box-shadow: 0 0 20px rgba(138, 43, 226, 0.3);
+      opacity: 1;
+    }
+    50% {
+      box-shadow: 0 0 30px rgba(138, 43, 226, 0.6);
+      opacity: 0.8;
+    }
+  }
+
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px) rotate(0deg);
+    }
+    33% {
+      transform: translateY(-10px) rotate(1deg);
+    }
+    66% {
+      transform: translateY(-5px) rotate(-1deg);
+    }
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  /* Breathing Animation */
+  @keyframes breathe {
+    0%, 100% {
+      transform: scale(1) rotate(0deg);
+    }
+    50% {
+      transform: scale(1.05) rotate(2deg);
+    }
+  }
+
+  .breathe {
+    animation: breathe 4s ease-in-out infinite;
   }
 }
