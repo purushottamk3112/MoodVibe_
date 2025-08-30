@@ -1,0 +1,524 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MoodVibe - Mood-Based Music Recommender</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          borderRadius: {
+            lg: "var(--radius)",
+            md: "calc(var(--radius) - 2px)",
+            sm: "calc(var(--radius) - 4px)",
+          },
+          colors: {
+            background: "var(--background)",
+            foreground: "var(--foreground)",
+            card: {
+              DEFAULT: "var(--card)",
+              foreground: "var(--card-foreground)",
+            },
+            popover: {
+              DEFAULT: "var(--popover)",
+              foreground: "var(--popover-foreground)",
+            },
+            primary: {
+              DEFAULT: "var(--primary)",
+              foreground: "var(--primary-foreground)",
+            },
+            secondary: {
+              DEFAULT: "var(--secondary)",
+              foreground: "var(--secondary-foreground)",
+            },
+            muted: {
+              DEFAULT: "var(--muted)",
+              foreground: "var(--muted-foreground)",
+            },
+            accent: {
+              DEFAULT: "var(--accent)",
+              foreground: "var(--accent-foreground)",
+            },
+            destructive: {
+              DEFAULT: "var(--destructive)",
+              foreground: "var(--destructive-foreground)",
+            },
+            border: "var(--border)",
+            input: "var(--input)",
+            ring: "var(--ring)",
+          },
+          fontFamily: {
+            sans: ["var(--font-sans)"],
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.8s ease-out forwards',
+            'slide-up': 'slideUp 0.6s ease-out forwards',
+            'spring-in': 'springIn 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards',
+            'stagger-in': 'staggerIn 0.6s ease-out forwards',
+            'pulse-gentle': 'pulseGentle 2s ease-in-out infinite',
+            'gradient-shift': 'gradientShift 8s ease-in-out infinite',
+          },
+          keyframes: {
+            fadeIn: {
+              '0%': { opacity: '0', transform: 'translateY(20px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+            },
+            slideUp: {
+              '0%': { opacity: '0', transform: 'translateY(30px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+            },
+            springIn: {
+              '0%': { opacity: '0', transform: 'scale(0.8) translateY(40px)' },
+              '100%': { opacity: '1', transform: 'scale(1) translateY(0)' },
+            },
+            staggerIn: {
+              '0%': { opacity: '0', transform: 'translateY(20px) scale(0.95)' },
+              '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+            },
+            pulseGentle: {
+              '0%, 100%': { opacity: '0.6' },
+              '50%': { opacity: '0.8' },
+            },
+            gradientShift: {
+              '0%, 100%': { backgroundPosition: '0% 50%' },
+              '50%': { backgroundPosition: '100% 50%' },
+            },
+          },
+        },
+      },
+    };
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <style>
+      :root {
+        --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        --radius: 12px;
+        
+        /* Light Theme */
+        --background: hsl(250 100% 99%);
+        --foreground: hsl(240 15% 9%);
+        --card: hsl(250 50% 98%);
+        --card-foreground: hsl(240 15% 9%);
+        --popover: hsl(250 50% 98%);
+        --popover-foreground: hsl(240 15% 9%);
+        --primary: hsl(262 83% 70%);
+        --primary-foreground: hsl(0 0% 100%);
+        --secondary: hsl(250 30% 95%);
+        --secondary-foreground: hsl(240 15% 25%);
+        --muted: hsl(250 30% 96%);
+        --muted-foreground: hsl(240 8% 46%);
+        --accent: hsl(262 83% 85%);
+        --accent-foreground: hsl(240 15% 25%);
+        --destructive: hsl(0 84% 60%);
+        --destructive-foreground: hsl(0 0% 100%);
+        --border: hsl(250 30% 91%);
+        --input: hsl(250 30% 94%);
+        --ring: hsl(262 83% 70%);
+      }
+
+      .dark {
+        --background: hsl(240 20% 6%);
+        --foreground: hsl(250 50% 95%);
+        --card: hsl(240 15% 9%);
+        --card-foreground: hsl(250 50% 95%);
+        --popover: hsl(240 15% 9%);
+        --popover-foreground: hsl(250 50% 95%);
+        --primary: hsl(262 83% 65%);
+        --primary-foreground: hsl(240 20% 6%);
+        --secondary: hsl(240 15% 11%);
+        --secondary-foreground: hsl(250 50% 85%);
+        --muted: hsl(240 15% 11%);
+        --muted-foreground: hsl(240 8% 65%);
+        --accent: hsl(262 83% 25%);
+        --accent-foreground: hsl(250 50% 85%);
+        --destructive: hsl(0 62% 50%);
+        --destructive-foreground: hsl(0 0% 100%);
+        --border: hsl(240 15% 15%);
+        --input: hsl(240 15% 13%);
+        --ring: hsl(262 83% 65%);
+      }
+
+      body {
+        font-family: var(--font-sans);
+        transition: background-color 0.5s cubic-bezier(0.23, 1, 0.32, 1), color 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+      }
+
+      .glass-card {
+        backdrop-filter: blur(16px);
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      }
+
+      .dark .glass-card {
+        background: rgba(15, 15, 25, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      }
+
+      .gradient-bg {
+        background: linear-gradient(-45deg, hsl(262 83% 85%), hsl(250 100% 90%), hsl(280 70% 88%), hsl(250 60% 85%));
+        background-size: 400% 400%;
+        animation: gradientShift 8s ease-in-out infinite;
+      }
+
+      .dark .gradient-bg {
+        background: linear-gradient(-45deg, hsl(240 20% 8%), hsl(262 83% 15%), hsl(240 15% 12%), hsl(280 40% 10%));
+        background-size: 400% 400%;
+        animation: gradientShift 8s ease-in-out infinite;
+      }
+
+      .btn-press {
+        transform: scale(0.98);
+        transition: all 0.1s ease-out;
+      }
+
+      .btn-press:active {
+        transform: scale(0.95);
+      }
+
+      .song-card {
+        transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+        transform: translateY(0);
+      }
+
+      .song-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+      }
+
+      .dark .song-card:hover {
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+      }
+
+      .theme-toggle {
+        transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+      }
+
+      .theme-toggle:hover {
+        transform: scale(1.1);
+      }
+
+      .loading-dot {
+        animation: pulseGentle 1.4s ease-in-out infinite;
+      }
+
+      .loading-dot:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+
+      .loading-dot:nth-child(3) {
+        animation-delay: 0.4s;
+      }
+
+      /* Stagger animation delays */
+      .stagger-1 { animation-delay: 0.1s; }
+      .stagger-2 { animation-delay: 0.2s; }
+      .stagger-3 { animation-delay: 0.3s; }
+      .stagger-4 { animation-delay: 0.4s; }
+      .stagger-5 { animation-delay: 0.5s; }
+      .stagger-6 { animation-delay: 0.6s; }
+    </style>
+</head>
+
+<body class="min-h-screen gradient-bg transition-all duration-500" data-mock="true">
+  <!-- @COMPONENT: App [Main application container] -->
+  <div class="min-h-screen flex flex-col">
+    
+    <!-- @COMPONENT: Header [Navigation and theme toggle] -->
+    <header class="p-6 flex justify-between items-center animate-fade-in">
+      <!-- @COMPONENT: Logo [Brand identity] -->
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg">
+          <i class="fas fa-music text-primary-foreground text-lg"></i>
+        </div>
+        <h1 class="text-2xl font-bold text-foreground tracking-tight">MoodVibe</h1>
+      </div>
+
+      <!-- @COMPONENT: ThemeToggle [Light/dark mode switcher] -->
+      <button 
+        class="theme-toggle w-12 h-6 bg-secondary rounded-full relative shadow-inner"
+        data-event="click:toggleTheme"
+        data-implementation="Toggle between light and dark themes, save preference to localStorage"
+        data-mock="true">
+        <div class="absolute w-5 h-5 bg-primary rounded-full top-0.5 left-0.5 shadow-md transition-transform duration-300"></div>
+        <i class="fas fa-sun absolute left-1.5 top-1 text-xs text-muted-foreground"></i>
+        <i class="fas fa-moon absolute right-1.5 top-1 text-xs text-muted-foreground"></i>
+      </button>
+    </header>
+    <!-- @END_COMPONENT: Header -->
+
+    <!-- @COMPONENT: MainContent [Primary application interface] -->
+    <main class="flex-1 flex flex-col items-center justify-center px-6 pb-12">
+      
+      <!-- @COMPONENT: HeroSection [Mood input and primary CTA] -->
+      <div class="w-full max-w-2xl mx-auto text-center space-y-8 animate-spring-in">
+        
+        <!-- @COMPONENT: HeroText [Main heading and description] -->
+        <div class="space-y-4">
+          <h2 class="text-5xl md:text-6xl font-bold text-foreground leading-tight">
+            Discover Music for
+            <span class="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              Your Mood
+            </span>
+          </h2>
+          <p class="text-xl text-muted-foreground max-w-md mx-auto leading-relaxed">
+            Tell us how you're feeling, and we'll find the perfect soundtrack for your moment
+          </p>
+        </div>
+
+        <!-- @COMPONENT: MoodInputForm [Mood entry and submission] -->
+        <div class="space-y-6">
+          <div class="relative">
+            <input 
+              type="text" 
+              placeholder="How are you feeling today?"
+              class="w-full px-6 py-4 text-lg rounded-2xl glass-card text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-all duration-300"
+              data-bind="moodInput"
+              data-mock="true"
+              data-implementation="Controlled input for mood entry" />
+            <div class="absolute right-4 top-1/2 transform -translate-y-1/2">
+              <i class="fas fa-heart text-primary text-xl animate-pulse-gentle"></i>
+            </div>
+          </div>
+
+          <!-- @COMPONENT: SubmitButton [Recommendation trigger] -->
+          <button 
+            class="btn-press w-full md:w-auto px-12 py-4 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-lg rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300"
+            data-event="click:getRecommendations"
+            data-implementation="Trigger mood analysis and music recommendations"
+            data-mock="true">
+            <span class="flex items-center justify-center space-x-2">
+              <i class="fas fa-search"></i>
+              <span>Get My Vibe</span>
+            </span>
+          </button>
+        </div>
+      </div>
+      <!-- @END_COMPONENT: HeroSection -->
+
+      <!-- @COMPONENT: LoadingState [Recommendation processing feedback] -->
+      <div class="hidden w-full max-w-2xl mx-auto mt-12 text-center" id="loadingState" data-mock="true">
+        <div class="glass-card rounded-2xl p-8">
+          <div class="flex items-center justify-center space-x-2 mb-4">
+            <div class="loading-dot w-3 h-3 bg-primary rounded-full"></div>
+            <div class="loading-dot w-3 h-3 bg-primary rounded-full"></div>
+            <div class="loading-dot w-3 h-3 bg-primary rounded-full"></div>
+          </div>
+          <p class="text-muted-foreground">Analyzing your mood and finding perfect tracks...</p>
+        </div>
+      </div>
+      <!-- @END_COMPONENT: LoadingState -->
+
+      <!-- @COMPONENT: RecommendationsSection [Music recommendations display] -->
+      <div class="w-full max-w-6xl mx-auto mt-12" id="recommendationsSection" data-mock="true">
+        <div class="text-center mb-8">
+          <h3 class="text-3xl font-bold text-foreground mb-2">Your Mood Playlist</h3>
+          <p class="text-muted-foreground">Based on your current vibe: <span class="text-primary font-medium" data-bind="detectedMood">Energetic & Uplifting</span></p>
+        </div>
+
+        <!-- @MAP: recommendations.map((song, index) => ( -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          
+          <!-- @COMPONENT: SongCard [Individual track recommendation] -->
+          <div class="song-card glass-card rounded-2xl p-6 animate-stagger-in opacity-0 stagger-1" data-mock="true">
+            <!-- High-energy electronic track with vibrant synths and driving beats -->
+            <img src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400" alt="Album cover for energetic electronic music" class="w-full aspect-square rounded-xl mb-4 object-cover shadow-md" />
+            
+            <div class="space-y-3">
+              <h4 class="font-semibold text-foreground text-lg leading-tight" data-bind="song.name">Electric Dreams</h4>
+              <p class="text-muted-foreground" data-bind="song.artist">Synthwave Collective</p>
+              <p class="text-sm text-muted-foreground" data-bind="song.album">Neon Nights</p>
+              
+              <button 
+                class="w-full mt-4 px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl transition-all duration-300 flex items-center justify-center space-x-2"
+                data-event="click:openSpotify"
+                data-implementation="Open song in Spotify app using external URL"
+                data-bind="song.spotifyUrl"
+                data-mock="true">
+                <i class="fab fa-spotify text-lg"></i>
+                <span>Play on Spotify</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="song-card glass-card rounded-2xl p-6 animate-stagger-in opacity-0 stagger-2" data-mock="true">
+            <!-- Uplifting pop song with bright melody and positive lyrics -->
+            <img src="https://pixabay.com/get/g7343b56bbbef7acecc285fa8a253e90386a09ad08322519849378c8d2d86e851faa0c48f1350adadff1b98826e42479bd7d8285c282992d8aaad2e02c8a058f6_1280.jpg" alt="Album cover for uplifting pop music" class="w-full aspect-square rounded-xl mb-4 object-cover shadow-md" />
+            
+            <div class="space-y-3">
+              <h4 class="font-semibold text-foreground text-lg leading-tight" data-bind="song.name">Sunshine Boulevard</h4>
+              <p class="text-muted-foreground" data-bind="song.artist">Happy Horizons</p>
+              <p class="text-sm text-muted-foreground" data-bind="song.album">Good Vibes Only</p>
+              
+              <button 
+                class="w-full mt-4 px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl transition-all duration-300 flex items-center justify-center space-x-2"
+                data-event="click:openSpotify"
+                data-implementation="Open song in Spotify app using external URL"
+                data-bind="song.spotifyUrl"
+                data-mock="true">
+                <i class="fab fa-spotify text-lg"></i>
+                <span>Play on Spotify</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="song-card glass-card rounded-2xl p-6 animate-stagger-in opacity-0 stagger-3" data-mock="true">
+            <!-- Energetic rock anthem with powerful drums and electric guitar -->
+            <img src="https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400" alt="Album cover for energetic rock music" class="w-full aspect-square rounded-xl mb-4 object-cover shadow-md" />
+            
+            <div class="space-y-3">
+              <h4 class="font-semibold text-foreground text-lg leading-tight" data-bind="song.name">Thunder & Lightning</h4>
+              <p class="text-muted-foreground" data-bind="song.artist">Electric Storm</p>
+              <p class="text-sm text-muted-foreground" data-bind="song.album">Power Surge</p>
+              
+              <button 
+                class="w-full mt-4 px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl transition-all duration-300 flex items-center justify-center space-x-2"
+                data-event="click:openSpotify"
+                data-implementation="Open song in Spotify app using external URL"
+                data-bind="song.spotifyUrl"
+                data-mock="true">
+                <i class="fab fa-spotify text-lg"></i>
+                <span>Play on Spotify</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="song-card glass-card rounded-2xl p-6 animate-stagger-in opacity-0 stagger-4" data-mock="true">
+            <!-- Feel-good indie track with acoustic elements and warm vocals -->
+            <img src="https://images.unsplash.com/photo-1511379938547-c1f69419868d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400" alt="Album cover for feel-good indie music" class="w-full aspect-square rounded-xl mb-4 object-cover shadow-md" />
+            
+            <div class="space-y-3">
+              <h4 class="font-semibold text-foreground text-lg leading-tight" data-bind="song.name">Morning Coffee</h4>
+              <p class="text-muted-foreground" data-bind="song.artist">The Cozy Quartet</p>
+              <p class="text-sm text-muted-foreground" data-bind="song.album">Weekend Moments</p>
+              
+              <button 
+                class="w-full mt-4 px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl transition-all duration-300 flex items-center justify-center space-x-2"
+                data-event="click:openSpotify"
+                data-implementation="Open song in Spotify app using external URL"
+                data-bind="song.spotifyUrl"
+                data-mock="true">
+                <i class="fab fa-spotify text-lg"></i>
+                <span>Play on Spotify</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="song-card glass-card rounded-2xl p-6 animate-stagger-in opacity-0 stagger-5" data-mock="true">
+            <!-- Upbeat dance track with infectious rhythm and bright synths -->
+            <img src="https://pixabay.com/get/gabb1022aa27d43be0563b0904e98e0aacaa68fbec2e515b75dbd4cf9468c95761b982716e1d101b431ebc1ad0a7c6cef58592ba404e64b562f5718687b441d1b_1280.jpg" alt="Album cover for upbeat dance music" class="w-full aspect-square rounded-xl mb-4 object-cover shadow-md" />
+            
+            <div class="space-y-3">
+              <h4 class="font-semibold text-foreground text-lg leading-tight" data-bind="song.name">Dance Floor Magic</h4>
+              <p class="text-muted-foreground" data-bind="song.artist">Beat Masters</p>
+              <p class="text-sm text-muted-foreground" data-bind="song.album">Club Classics</p>
+              
+              <button 
+                class="w-full mt-4 px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl transition-all duration-300 flex items-center justify-center space-x-2"
+                data-event="click:openSpotify"
+                data-implementation="Open song in Spotify app using external URL"
+                data-bind="song.spotifyUrl"
+                data-mock="true">
+                <i class="fab fa-spotify text-lg"></i>
+                <span>Play on Spotify</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="song-card glass-card rounded-2xl p-6 animate-stagger-in opacity-0 stagger-6" data-mock="true">
+            <!-- Motivational hip-hop track with confident lyrics and strong beat -->
+            <img src="https://images.unsplash.com/photo-1571330735066-03aaa9429d89?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400" alt="Album cover for motivational hip-hop music" class="w-full aspect-square rounded-xl mb-4 object-cover shadow-md" />
+            
+            <div class="space-y-3">
+              <h4 class="font-semibold text-foreground text-lg leading-tight" data-bind="song.name">Rise Above</h4>
+              <p class="text-muted-foreground" data-bind="song.artist">Elevated Minds</p>
+              <p class="text-sm text-muted-foreground" data-bind="song.album">Higher Ground</p>
+              
+              <button 
+                class="w-full mt-4 px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl transition-all duration-300 flex items-center justify-center space-x-2"
+                data-event="click:openSpotify"
+                data-implementation="Open song in Spotify app using external URL"
+                data-bind="song.spotifyUrl"
+                data-mock="true">
+                <i class="fab fa-spotify text-lg"></i>
+                <span>Play on Spotify</span>
+              </button>
+            </div>
+          </div>
+          
+        </div>
+        <!-- @END_MAP -->
+      </div>
+      <!-- @END_COMPONENT: RecommendationsSection -->
+
+    </main>
+    <!-- @END_COMPONENT: MainContent -->
+
+    <!-- @COMPONENT: Footer [App information and credits] -->
+    <footer class="p-6 text-center border-t border-border/50">
+      <p class="text-muted-foreground text-sm">
+        Powered by <span class="text-primary font-medium">Spotify</span> & <span class="text-primary font-medium">Google Gemini</span>
+      </p>
+    </footer>
+    <!-- @END_COMPONENT: Footer -->
+
+  </div>
+  <!-- @END_COMPONENT: App -->
+
+  <script>
+    // TODO: Implement full React application with state management
+    // TODO: Integrate with backend API for mood analysis and music recommendations
+    // TODO: Add Framer Motion animations for enhanced user experience
+    
+    (function() {
+      // Theme toggle functionality
+      const themeToggle = document.querySelector('.theme-toggle');
+      const body = document.body;
+      
+      // TODO: Load theme preference from localStorage
+      let isDark = false;
+      
+      themeToggle.addEventListener('click', function() {
+        isDark = !isDark;
+        
+        if (isDark) {
+          body.classList.add('dark');
+          // TODO: Save dark mode preference to localStorage
+        } else {
+          body.classList.remove('dark');
+          // TODO: Save light mode preference to localStorage
+        }
+        
+        // Animate toggle switch
+        const toggleSwitch = themeToggle.querySelector('div');
+        if (isDark) {
+          toggleSwitch.style.transform = 'translateX(24px)';
+        } else {
+          toggleSwitch.style.transform = 'translateX(0)';
+        }
+      });
+
+      // Demo: Show recommendations after a delay for design purposes
+      setTimeout(() => {
+        const staggerCards = document.querySelectorAll('.animate-stagger-in');
+        staggerCards.forEach(card => {
+          card.classList.remove('opacity-0');
+          card.classList.add('opacity-100');
+        });
+      }, 1000);
+
+      // TODO: Implement mood input form submission
+      // TODO: Add loading state management
+      // TODO: Handle API error states
+      // TODO: Implement Spotify integration for opening tracks
+      // TODO: Add responsive animations for mobile devices
+      
+    })();
+  </script>
+
+</body>
+</html>
