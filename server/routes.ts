@@ -85,20 +85,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     })
   );
 
+  // app.get(
+  //   "/api/auth/google/callback",
+  //   passport.authenticate("google", { session: false }),
+  //   (req: any, res) => {
+  //     try {
+  //       const { user, token } = req.user;
+  //       // Redirect to frontend with token
+  //       res.redirect(`/?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}`);
+  //     } catch (error) {
+  //       console.error("Google callback error:", error);
+  //       res.redirect("/?error=auth_failed");
+  //     }
+  //   }
+  // );
+  //modified code for detecting error,we can chevkk it later 
+
   app.get(
     "/api/auth/google/callback",
     passport.authenticate("google", { session: false }),
     (req: any, res) => {
       try {
-        const { user, token } = req.user;
-        // Redirect to frontend with token
-        res.redirect(`/?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}`);
-      } catch (error) {
+        console.log("Google callback reached, req.user =", req.user);
+        const { user, token } = req.user ?? {};
+  
+        if (!user || !token) {
+          console.error("Missing user or token after Google auth");
+          return res.status(400).json({ message: "Invalid profile" });
+        }
+  
+        res.redirect(
+          `/?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}`
+        );
+      } catch (error: any) {
         console.error("Google callback error:", error);
-        res.redirect("/?error=auth_failed");
+        res.status(400).json({ message: error.message || "Invalid URL" });
       }
     }
   );
+
+
+
+
 
   // Get current user
   app.get("/api/auth/me", authenticateToken, (req, res) => {
